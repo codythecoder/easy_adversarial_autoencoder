@@ -7,3 +7,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# local traning images
+reshaped_images/
+raw_data/
+bad_data/
+out/
