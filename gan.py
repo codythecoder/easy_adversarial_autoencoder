@@ -89,6 +89,20 @@ def noisy(net_in, std):
     noise = tf.random_normal(shape=tf.shape(net_in), mean=0.0, stddev=std, dtype=tf.float32)
     return net_in + noise
 
+def conv2d_batch_norm(weights, *args, is_train=False, **kwargs):
+    activation = None
+    if 'activation' in kwargs:
+        activation = kwargs['activation']
+        kwargs['activation'] = None
+    elif len(args) >= 8:
+        args = list(args)
+        activation = args[7]
+        args[7] = None
+    weights = conv2d(weights, *args, **kwargs)
+    weights = tf.layers.batch_normalization(weights, training=is_train)
+    if activation is not None:
+        weights = activation(weights)
+    return weights
 
 # Generator
 def encoder(net_in, reuse=False):
@@ -99,13 +113,11 @@ def encoder(net_in, reuse=False):
     layers = start_layers // 2 ** deconvolution_layers
     start_size = start_shape[0] * start_shape[1] * start_layers
     with tf.variable_scope("encoder", reuse=reuse):
-        weights = conv2d(net_in, layers, (5, 5), activation=tf.nn.leaky_relu, padding='SAME')
-        weights = conv2d(weights, layers, (3, 3), activation=tf.nn.leaky_relu, padding='SAME')
-        weights = tf.layers.batch_normalization(weights, training=is_train)
+        weights = conv2d_batch_norm(net_in, layers, (5, 5), activation=tf.nn.leaky_relu, padding='SAME')
+        weights = conv2d_batch_norm(weights, layers, (3, 3), activation=tf.nn.leaky_relu, padding='SAME')
         for _ in range(deconvolution_layers):
-            weights = conv2d(weights, layers, (5, 5), (2, 2), activation=tf.nn.leaky_relu, padding='SAME')
-            weights = conv2d(weights, layers, (3, 3), activation=tf.nn.leaky_relu, padding='SAME')
-            weights = tf.layers.batch_normalization(weights, training=is_train)
+            weights = conv2d_batch_norm(weights, layers, (5, 5), (2, 2), activation=tf.nn.leaky_relu, padding='SAME')
+            weights = conv2d_batch_norm(weights, layers, (3, 3), activation=tf.nn.leaky_relu, padding='SAME')
             layers *= 2
         weights = flatten(weights)
         # weights = dense(weights, 3000, kernel_initializer=glorot_init, activation=tf.nn.tanh)
@@ -140,14 +152,12 @@ def decoder(net_in, reuse=False):
         for _ in range(deconvolution_layers):
             curr_shape = curr_shape[0] * 2, curr_shape[1] * 2
             weights = upscale(weights, curr_shape)
-            weights = conv2d(weights, layers, (5, 5), activation=tf.nn.leaky_relu, padding='SAME')
-            weights = conv2d(weights, layers, (3, 3), activation=tf.nn.leaky_relu, padding='SAME')
-            weights = tf.layers.batch_normalization(weights, training=is_train)
+            weights = conv2d_batch_norm(weights, layers, (5, 5), activation=tf.nn.leaky_relu, padding='SAME')
+            weights = conv2d_batch_norm(weights, layers, (3, 3), activation=tf.nn.leaky_relu, padding='SAME')
             layers /= 2
 
-        weights = conv2d(weights, 3, (5, 5), activation=tf.nn.leaky_relu, padding='SAME')
-        weights = conv2d(weights, 3, (3, 3), activation=tf.nn.sigmoid, padding='SAME')
-        weights = tf.layers.batch_normalization(weights, training=is_train)
+        weights = conv2d_batch_norm(weights, 3, (5, 5), activation=tf.nn.leaky_relu, padding='SAME')
+        weights = conv2d_batch_norm(weights, 3, (3, 3), activation=tf.nn.sigmoid, padding='SAME')
     return weights
 
 
@@ -155,14 +165,10 @@ def decoder(net_in, reuse=False):
 # Discriminator
 def discriminator(net_in, reuse=False):
     with tf.variable_scope("discriminator", reuse=reuse):
-        weights = conv2d(net_in, 32, (4, 4), (3, 3), activation=tf.nn.leaky_relu, padding='VALID')
-        weights = tf.layers.batch_normalization(weights, training=is_train)
-        weights = conv2d(weights, 64, (3, 3), activation=tf.nn.leaky_relu, padding='VALID')
-        weights = tf.layers.batch_normalization(weights, training=is_train)
-        weights = conv2d(weights, 128, (3, 3), activation=tf.nn.leaky_relu, padding='VALID')
-        weights = tf.layers.batch_normalization(weights, training=is_train)
-        weights = conv2d(weights, 256, (3, 3), activation=tf.nn.leaky_relu, padding='VALID')
-        weights = tf.layers.batch_normalization(weights, training=is_train)
+        weights = conv2d_batch_norm(net_in, 32, (4, 4), (3, 3), activation=tf.nn.leaky_relu, padding='VALID')
+        weights = conv2d_batch_norm(weights, 64, (3, 3), activation=tf.nn.leaky_relu, padding='VALID')
+        weights = conv2d_batch_norm(weights, 128, (3, 3), activation=tf.nn.leaky_relu, padding='VALID')
+        weights = conv2d_batch_norm(weights, 256, (3, 3), activation=tf.nn.leaky_relu, padding='VALID')
         # weights = flatten(net_in)
         weights = flatten(weights)
         window = tf.nn.pool(net_in, (6, 6), 'AVG', 'VALID', strides=(3, 3))
