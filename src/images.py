@@ -53,7 +53,8 @@ def process_images(folder, out_folder, shape, overwrite=False, crop='fit', valid
     print ('{0} of {0} ({1} kept)'.format(len(files), images))
 
 
-def load_images(folder, shape):
+def load_images(input_folder, reshaped_folder, shape):
+    folder = os.path.join(reshaped_folder, input_folder)
     files = [os.path.join(path, filename) for path, dirs, files in os.walk(folder) for filename in files]
 
     images = []

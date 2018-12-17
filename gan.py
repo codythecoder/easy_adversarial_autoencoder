@@ -216,7 +216,7 @@ ae_train = tf.train.AdamOptimizer(learning_rate).minimize(ae_loss)
 
 
 print ('loading images...')
-images = load_images(get_reshaped_folder(args.out, target_shape), target_shape)
+images = load_images(args.images, get_reshaped_folder(args.out, target_shape), target_shape)
 
 input_data = Batcher(images)
 
