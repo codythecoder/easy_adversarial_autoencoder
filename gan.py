@@ -78,6 +78,7 @@ parser.add_argument('--images', default='images')
 parser.add_argument('--out', default='reshaped_images')
 parser.add_argument('--no_load', action='store_true')
 parser.add_argument('--no_save', action='store_true')
+parser.add_argument('--show_transition', action='store_true')
 
 args = parser.parse_args()
 
@@ -289,13 +290,14 @@ with tf.Session() as sess:
                 g = sess.run([ae_sample], feed_dict={disc_input: [item], is_train: False})
                 save_image(start_time, g[0][0], outputted['out'])
                 outputted['out'] += 1
-            start, end = input_data.batch(2)
-            start_image = sess.run([latent_space], feed_dict={disc_input: [start], is_train: False})[0]
-            end_image = sess.run([latent_space], feed_dict={disc_input: [end], is_train: False})[0]
-            for state in slide(start_image, end_image, save_count):
-                g = sess.run([ae_sample], feed_dict={latent_space: state, is_train: False})
-                save_image(start_time, g[0][0], outputted['slide'], '_s')
-                outputted['slide'] += 1
+            if args.show_transition:
+                start, end = input_data.batch(2)
+                start_image = sess.run([latent_space], feed_dict={disc_input: [start], is_train: False})[0]
+                end_image = sess.run([latent_space], feed_dict={disc_input: [end], is_train: False})[0]
+                for state in slide(start_image, end_image, save_count):
+                    g = sess.run([ae_sample], feed_dict={latent_space: state, is_train: False})
+                    save_image(start_time, g[0][0], outputted['slide'], '_s')
+                    outputted['slide'] += 1
 
 
     # draw(sess)
