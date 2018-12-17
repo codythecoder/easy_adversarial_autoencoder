@@ -23,7 +23,7 @@ from PIL import Image
 from math import ceil
 import random
 import sys
-from src.images import load_images, save_image
+from src.images import load_images, save_image, get_reshaped_folder
 from consts import *
 from src.misc import Flip_Flopper
 from collections import defaultdict
@@ -216,7 +216,7 @@ ae_train = tf.train.AdamOptimizer(learning_rate).minimize(ae_loss)
 
 
 print ('loading images...')
-images = load_images(args.out, target_shape)
+images = load_images(get_reshaped_folder(args.out, target_shape), target_shape)
 
 input_data = Batcher(images)
 
